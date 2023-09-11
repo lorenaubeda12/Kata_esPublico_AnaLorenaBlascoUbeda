@@ -12,7 +12,6 @@ config.properties
 .settings
 .springBeans
 .sts4-cache
-config.properties
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
