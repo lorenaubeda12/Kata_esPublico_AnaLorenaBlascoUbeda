@@ -1,0 +1,4 @@
+"Order ID","Order Priority","Order Date","Region","Country","Item Type","Sales Channel","Ship Date","Units Sold","Unit Price","Unit Cost","Total Revenue","Total Cost","Total Profit"
+"185941302","M","Mon Jul 11 00:00:00 CEST 2011","North America","Canada","Vegetables","Online","Fri Aug 12 00:00:00 CEST 2011","3018","154.06","90.93","464953.08","274426.74","190526.34"
+"246222341","C","Tue Jul 10 00:00:00 CEST 2018","Middle East and North Africa","Libya","Baby Food","Offline","Mon Sep 12 00:00:00 CEST 2016","1517","255.28","159.42","387259.76","241840.14","145419.62"
+"686800706","M","Wed Jun 10 00:00:00 CEST 2015","Middle East and North Africa","Libya","Cosmetics","Offline","Sun Jul 10 00:00:00 CEST 2016","8446","437.2","263.33","3692591.2","2224085.18","1468506.02"
