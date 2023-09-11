@@ -1,10 +1,10 @@
-package managerOrders;
+package Services;
 
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
-import connections.sqlConnection;
+import Utils.sqlConnection;
 import com.opencsv.CSVReader;
-import pojo.Order;
+import POJO.Order;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -17,7 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public class ManageOrders {
+public class OrderManager {
     private static final int REGION_COLUMN = 0;
     private static final int COUNTRY_COLUMN = 1;
     private static final int ITEM_TYPE_COLUMN = 2;

@@ -1,4 +1,4 @@
-package pojo;
+package POJO;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
