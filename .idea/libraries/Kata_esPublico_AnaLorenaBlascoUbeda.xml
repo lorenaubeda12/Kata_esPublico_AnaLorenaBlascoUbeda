@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Kata_esPublico_AnaLorenaBlascoUbeda">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/opencsv-5.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/commons-lang3-3.13.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/commons-io-2.13.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
