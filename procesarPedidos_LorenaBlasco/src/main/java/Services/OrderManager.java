@@ -10,6 +10,8 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.FileReader;
 import java.sql.Connection;
@@ -18,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 public class OrderManager {
+    private static final int MAX_BATCH_SIZE = 1000;
     private static final int REGION_COLUMN = 0;
     private static final int COUNTRY_COLUMN = 1;
     private static final int ITEM_TYPE_COLUMN = 2;
@@ -47,7 +50,6 @@ public class OrderManager {
                     try (CSVReader csvReader = new CSVReader(new FileReader(pathCSV))) {
                         List<Order> lstOrders = new ArrayList<>();
                         skipHeaders(csvReader);
-
                         List<String[]> lines = csvReader.readAll();
                         lines.forEach(line -> {
                             Order newOrder = extractOrderFromLine(line);
@@ -130,12 +132,30 @@ public class OrderManager {
         try {
             connection.setAutoCommit(false);
             try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_QUERY)) {
+                int batchSize = 0;
+                int totalInsertData = 0;
                 for (Order order : Orders) {
                     addOrderToBatch(preparedStatement, order);
+                    System.out.println("Añiadiendo datos al batch");
+                    batchSize++;
+
+                    if (batchSize % MAX_BATCH_SIZE == 0) {
+                        // Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador
+                        System.out.println("Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador");
+                        int[] batchResult = preparedStatement.executeBatch();
+                        preparedStatement.clearBatch();
+                        totalInsertData += batchSize;
+                        System.out.println("Total data insert: " + totalInsertData);
+                        System.out.println("batchSize de : " + batchSize);
+                        batchSize = 0;
+                    }
                 }
 
-                // Ejecutar todas las instrucciones de inserción en una sola transacción
-                int[] batchResult = preparedStatement.executeBatch();
+                // Ejecutar el lote final (si no se ha alcanzado exactamente 1000 registros)
+                if (batchSize > 0) {
+                    System.out.println("Ejecutar el lote final (si no se ha alcanzado exactamente 1000 registros)");
+                    int[] batchResult = preparedStatement.executeBatch();
+                }
 
                 // Confirmar la transacción si todas las inserciones se realizaron con éxito
                 connection.commit();
@@ -158,16 +178,16 @@ public class OrderManager {
     }
 
     private static void addOrderToBatch(PreparedStatement preparedStatement, Order order) throws SQLException {
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
         preparedStatement.setString(1, order.getOrderID());
         preparedStatement.setString(2, order.getOrderPriority());
 
         Date utilOrderDate = order.getOrderDate();
-        if (utilOrderDate != null) {
-            java.sql.Date sqlOrderDate = new java.sql.Date(utilOrderDate.getTime());
-            preparedStatement.setDate(3, sqlOrderDate);
-        } else {
-            preparedStatement.setNull(3, Types.DATE);
-        }
+        java.sql.Date sqlOrderDate = new java.sql.Date(utilOrderDate.getTime());
+        preparedStatement.setDate(3, sqlOrderDate);
+
 
         preparedStatement.setString(4, order.getRegion());
         preparedStatement.setString(5, order.getCountry());
@@ -175,13 +195,9 @@ public class OrderManager {
         preparedStatement.setString(7, order.getSalesChannel());
 
         Date utilShipDate = order.getShipDate();
-        if (utilShipDate != null) {
-            java.sql.Date sqlShipDate = new java.sql.Date(utilShipDate.getTime());
-            preparedStatement.setDate(8, sqlShipDate);
-        } else {
-            preparedStatement.setNull(8, Types.DATE);
-        }
+        sqlOrderDate = new java.sql.Date(utilShipDate.getTime());
 
+        preparedStatement.setDate(8, sqlOrderDate);
         preparedStatement.setInt(9, order.getUnitsSold());
         preparedStatement.setDouble(10, order.getUnitPrice());
         preparedStatement.setDouble(11, order.getUnitCost());
@@ -193,92 +209,104 @@ public class OrderManager {
     }
 
 
-    public static void exportDataToNewCSV(List<Order> Orders, String filename) {
-        try (CSVWriter csvWriter = new CSVWriter(new FileWriter(filename))) {
-            // Escribe el encabezado en el archivo CSV
-            String[] header = {
-                    "Order ID",
-                    "Order Priority",
-                    "Order Date",
-                    "Region",
-                    "Country",
-                    "Item Type",
-                    "Sales Channel",
-                    "Ship Date",
-                    "Units Sold",
-                    "Unit Price",
-                    "Unit Cost",
-                    "Total Revenue",
-                    "Total Cost",
-                    "Total Profit"
-            };
-            csvWriter.writeNext(header);
 
-            // Recopila los datos a escribir en el archivo CSV
-            List<String[]> orderLines = extractOrderLines(Orders);
-            // Escribe todas las lineas de pedido recogidas en el archivo CSV
-            csvWriter.writeAll(orderLines);
-            System.out.println("Los datos se han exportado correctamente al archivo " + filename);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error al exportar datos al archivo CSV.");
+
+public static void exportDataToNewCSV(List<Order> Orders,String filename){
+        try(CSVWriter csvWriter=new CSVWriter(new FileWriter(filename),
+                CSVWriter.DEFAULT_SEPARATOR,
+                CSVWriter.NO_QUOTE_CHARACTER,
+                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                CSVWriter.RFC4180_LINE_END)){
+
+        // Escribe el encabezado en el archivo CSV
+        String[]header={
+        "Order ID",
+        "Order Priority",
+        "Order Date",
+        "Region",
+        "Country",
+        "Item Type",
+        "Sales Channel",
+        "Ship Date",
+        "Units Sold",
+        "Unit Price",
+        "Unit Cost",
+        "Total Revenue",
+        "Total Cost",
+        "Total Profit"
+        };
+        csvWriter.writeNext(header);
+
+        // Recopila los datos a escribir en el archivo CSV
+        List<String[]>orderLines=extractOrderLines(Orders);
+        // Escribe todas las lineas de pedido recogidas en el archivo CSV
+        csvWriter.writeAll(orderLines);
+        System.out.println("Los datos se han exportado correctamente al archivo "+filename);
+        }catch(Exception e){
+        e.printStackTrace();
+        System.out.println("Error al exportar datos al archivo CSV.");
         }
-    }
+        }
 
-    private static List<String[]> extractOrderLines(List<Order> Orders) {
-        List<String[]> orderLines = new ArrayList<>();
-        Orders.forEach(order -> {
-            String[] data = extractOrderData(order);
-            orderLines.add(data);
+private static List<String[]>extractOrderLines(List<Order> Orders){
+        List<String[]>orderLines=new ArrayList<>();
+        Orders.forEach(order->{
+        String[]data=extractOrderData(order);
+        orderLines.add(data);
         });
         return orderLines;
-    }
+        }
 
-    private static String[] extractOrderData(Order order) {
-        String[] data = {
-                order.getOrderID(),
-                order.getOrderPriority(),
-                order.getOrderDate().toString(),
-                order.getRegion(),
-                order.getCountry(),
-                order.getItemType(),
-                order.getSalesChannel(),
-                order.getShipDate().toString(),
-                String.valueOf(order.getUnitsSold()),
-                String.valueOf(order.getUnitPrice()),
-                String.valueOf(order.getUnitCost()),
-                String.valueOf(order.getTotalRevenue()),
-                String.valueOf(order.getTotalCost()),
-                String.valueOf(order.getTotalProfit())
+private static String[] extractOrderData(Order order){
+        SimpleDateFormat dateFormat=new SimpleDateFormat("dd/MM/yyyy");
+        String orderDateParse=dateFormat.format(order.getOrderDate());
+        String shipDateParse=dateFormat.format(order.getShipDate());
+
+        String[]data={
+        order.getOrderID(),
+        order.getOrderPriority(),
+        orderDateParse,
+        order.getRegion(),
+        order.getCountry(),
+        order.getItemType(),
+        order.getSalesChannel(),
+        shipDateParse,
+        String.valueOf(order.getUnitsSold()),
+        String.valueOf(order.getUnitPrice()),
+        String.valueOf(order.getUnitCost()),
+        String.valueOf(order.getTotalRevenue()),
+        String.valueOf(order.getTotalCost()),
+        String.valueOf(order.getTotalProfit())
         };
+
         return data;
-    }
+        }
 
 
-    public static void showSummary(List<Order> Orders) {
-        Map<String, Integer> regionCount = new HashMap<>();
-        Map<String, Integer> countryCount = new HashMap<>();
-        Map<String, Integer> itemTypeCount = new HashMap<>();
-        Map<String, Integer> salesChannelCount = new HashMap<>();
-        Map<String, Integer> orderPriorityCount = new HashMap<>();
+public static void showSummary(List<Order> Orders){
+        Map<String, Integer> regionCount=new HashMap<>();
+        Map<String, Integer> countryCount=new HashMap<>();
+        Map<String, Integer> itemTypeCount=new HashMap<>();
+        Map<String, Integer> salesChannelCount=new HashMap<>();
+        Map<String, Integer> orderPriorityCount=new HashMap<>();
 
         //Conteo por region,pais,tipo de item, canal de ventas, prioridad...
-        for (Order order : Orders) {
+        for(Order order:Orders){
 
-            String region = order.getRegion();
-            regionCount.put(region, regionCount.getOrDefault(region, 0) + 1);
+        String region=order.getRegion();
+        regionCount.put(region,regionCount.getOrDefault(region,0)+1);
 
-            String country = order.getCountry();
-            countryCount.put(country, countryCount.getOrDefault(country, 0) + 1);
+        String country=order.getCountry();
+        countryCount.put(country,countryCount.getOrDefault(country,0)+1);
 
-            String itemType = order.getItemType();
-            itemTypeCount.put(itemType, itemTypeCount.getOrDefault(itemType, 0) + 1);
+        String itemType=order.getItemType();
+        itemTypeCount.put(itemType,itemTypeCount.getOrDefault(itemType,0)+1);
 
-            String salesChannel = order.getSalesChannel();
-            salesChannelCount.put(salesChannel, salesChannelCount.getOrDefault(salesChannel, 0) + 1);
+        String salesChannel=order.getSalesChannel();
+        salesChannelCount.put(salesChannel,salesChannelCount.getOrDefault(salesChannel,0)+1);
 
-            String orderPriority = order.getOrderPriority();
-            orderPriorityCount.put(orderPriority, orderPriorityCount.getOrDefault(orderPriority, 0) + 1);
+        String orderPriority=order.getOrderPriority();
+        orderPriorityCount.put(orderPriority,orderPriorityCount.getOrDefault(orderPriority,0)+1);
 
         }
         System.out.println("------------------------------");
@@ -301,13 +329,13 @@ public class OrderManager {
         showCounts(orderPriorityCount);
         System.out.println("------------------------------\n");
 
-    }
-
-
-    public static void showCounts(Map<String, Integer> count) {
-        for (Map.Entry<String, Integer> entry : count.entrySet()) {
-            System.out.println(entry.getKey() + ": " + entry.getValue());
         }
-    }
-}
+
+
+public static void showCounts(Map<String, Integer> count){
+        for(Map.Entry<String, Integer> entry:count.entrySet()){
+        System.out.println(entry.getKey()+": "+entry.getValue());
+        }
+        }
+        }
 

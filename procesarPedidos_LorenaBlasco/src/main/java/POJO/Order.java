@@ -46,7 +46,7 @@ public class Order {
 
     public void setOrderDate(String orderDate) {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
             this.orderDate = dateFormat.parse(orderDate);
         } catch (ParseException e) {
             e.printStackTrace();
@@ -92,7 +92,7 @@ public class Order {
 
     public void setShipDate(String shipDate) {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
             this.shipDate = dateFormat.parse(shipDate);
         } catch (ParseException e) {
             e.printStackTrace();
