@@ -2,7 +2,7 @@ package Services;
 
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
-import Utils.sqlConnection;
+import Utils.SQLConnection;
 import com.opencsv.CSVReader;
 import POJO.Order;
 
@@ -10,14 +10,12 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 
 public class OrderManager {
     private static final int MAX_BATCH_SIZE = 1000;
@@ -40,7 +38,7 @@ public class OrderManager {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        try (Connection connectDB = sqlConnection.openConnection()) {
+        try (Connection connectDB = SQLConnection.openConnection()) {
             System.out.println("Conexion correcta");
             try {
                 System.out.println("Bienvenido a la digitalización de datos.");
@@ -82,7 +80,7 @@ public class OrderManager {
             } catch (Exception exception) {
                 exception.printStackTrace();
             } finally {
-                sqlConnection.closeConnection(connectDB);
+                SQLConnection.closeConnection(connectDB);
                 scanner.close();
             }
         } catch (Exception exception) {
@@ -128,14 +126,14 @@ public class OrderManager {
         }
     }
 
-    public static void insertOrdersToDatabase(List<Order> Orders, Connection connection) {
+    public static void insertOrdersToDatabase(List<Order> orders, Connection connection) {
         try {
             connection.setAutoCommit(false);
             try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_QUERY)) {
                 int batchSize = 0;
                 int totalInsertData = 0;
                 System.out.println("Insertando datos en la base de datos. Por favor, espere.");
-                for (Order order : Orders) {
+                for (Order order : orders) {
                     addOrderToBatch(preparedStatement, order);
                     batchSize++;
 
@@ -148,13 +146,15 @@ public class OrderManager {
                         totalInsertData += batchSize;
                         batchSize = 0;
                     }
+
+                    System.out.println(totalInsertData + " datos introducidos de un total de " + orders.size());
                 }
 
                 // Ejecutar el lote final (si no se ha alcanzado exactamente 1000 registros)
                 if (batchSize > 0) {
                     int[] batchResult = preparedStatement.executeBatch();
                 }
-                System.out.println("Total de datos insertados: "+totalInsertData);
+                System.out.println("Total de datos insertados: " + totalInsertData);
                 // Confirmar la transacción si todas las inserciones se realizaron con éxito
                 connection.commit();
 
@@ -207,104 +207,102 @@ public class OrderManager {
     }
 
 
-
-
-public static void exportDataToNewCSV(List<Order> Orders,String filename){
-        try(CSVWriter csvWriter=new CSVWriter(new FileWriter(filename),
+    public static void exportDataToNewCSV(List<Order> orders, String filename) {
+        try (CSVWriter csvWriter = new CSVWriter(new FileWriter(filename),
                 CSVWriter.DEFAULT_SEPARATOR,
                 CSVWriter.NO_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
-                CSVWriter.RFC4180_LINE_END)){
+                CSVWriter.RFC4180_LINE_END)) {
 
-        // Escribe el encabezado en el archivo CSV
-        String[]header={
-        "Order ID",
-        "Order Priority",
-        "Order Date",
-        "Region",
-        "Country",
-        "Item Type",
-        "Sales Channel",
-        "Ship Date",
-        "Units Sold",
-        "Unit Price",
-        "Unit Cost",
-        "Total Revenue",
-        "Total Cost",
-        "Total Profit"
-        };
-        csvWriter.writeNext(header);
+            // Escribe el encabezado en el archivo CSV
+            String[] header = {
+                    "Order ID",
+                    "Order Priority",
+                    "Order Date",
+                    "Region",
+                    "Country",
+                    "Item Type",
+                    "Sales Channel",
+                    "Ship Date",
+                    "Units Sold",
+                    "Unit Price",
+                    "Unit Cost",
+                    "Total Revenue",
+                    "Total Cost",
+                    "Total Profit"
+            };
+            csvWriter.writeNext(header);
 
-        // Recopila los datos a escribir en el archivo CSV
-        List<String[]>orderLines=extractOrderLines(Orders);
-        // Escribe todas las lineas de pedido recogidas en el archivo CSV
-        csvWriter.writeAll(orderLines);
-        System.out.println("Los datos se han exportado correctamente al archivo "+filename);
-        }catch(Exception e){
-        e.printStackTrace();
-        System.out.println("Error al exportar datos al archivo CSV.");
+            // Recopila los datos a escribir en el archivo CSV
+            List<String[]> orderLines = extractOrderLines(orders);
+            // Escribe todas las lineas de pedido recogidas en el archivo CSV
+            csvWriter.writeAll(orderLines);
+            System.out.println("Los datos se han exportado correctamente al archivo " + filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error al exportar datos al archivo CSV.");
         }
-        }
+    }
 
-private static List<String[]>extractOrderLines(List<Order> Orders){
-        List<String[]>orderLines=new ArrayList<>();
-        Orders.forEach(order->{
-        String[]data=extractOrderData(order);
-        orderLines.add(data);
+    private static List<String[]> extractOrderLines(List<Order> orders) {
+        List<String[]> orderLines = new ArrayList<>();
+        orders.forEach(order -> {
+            String[] data = extractOrderData(order);
+            orderLines.add(data);
         });
         return orderLines;
-        }
+    }
 
-private static String[] extractOrderData(Order order){
-        SimpleDateFormat dateFormat=new SimpleDateFormat("dd/MM/yyyy");
-        String orderDateParse=dateFormat.format(order.getOrderDate());
-        String shipDateParse=dateFormat.format(order.getShipDate());
+    private static String[] extractOrderData(Order order) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        String orderDateParse = dateFormat.format(order.getOrderDate());
+        String shipDateParse = dateFormat.format(order.getShipDate());
 
-        String[]data={
-        order.getOrderID(),
-        order.getOrderPriority(),
-        orderDateParse,
-        order.getRegion(),
-        order.getCountry(),
-        order.getItemType(),
-        order.getSalesChannel(),
-        shipDateParse,
-        String.valueOf(order.getUnitsSold()),
-        String.valueOf(order.getUnitPrice()),
-        String.valueOf(order.getUnitCost()),
-        String.valueOf(order.getTotalRevenue()),
-        String.valueOf(order.getTotalCost()),
-        String.valueOf(order.getTotalProfit())
+        String[] data = {
+                order.getOrderID(),
+                order.getOrderPriority(),
+                orderDateParse,
+                order.getRegion(),
+                order.getCountry(),
+                order.getItemType(),
+                order.getSalesChannel(),
+                shipDateParse,
+                String.valueOf(order.getUnitsSold()),
+                String.valueOf(order.getUnitPrice()),
+                String.valueOf(order.getUnitCost()),
+                String.valueOf(order.getTotalRevenue()),
+                String.valueOf(order.getTotalCost()),
+                String.valueOf(order.getTotalProfit())
         };
 
         return data;
-        }
+    }
 
 
-public static void showSummary(List<Order> Orders){
-        Map<String, Integer> regionCount=new HashMap<>();
-        Map<String, Integer> countryCount=new HashMap<>();
-        Map<String, Integer> itemTypeCount=new HashMap<>();
-        Map<String, Integer> salesChannelCount=new HashMap<>();
-        Map<String, Integer> orderPriorityCount=new HashMap<>();
+    public static void showSummary(List<Order> orders) {
+        Map<String, Integer> regionCount = new HashMap<>();
+        Map<String, Integer> countryCount = new HashMap<>();
+        Map<String, Integer> itemTypeCount = new HashMap<>();
+        Map<String, Integer> salesChannelCount = new HashMap<>();
+        Map<String, Integer> orderPriorityCount = new HashMap<>();
 
         //Conteo por region,pais,tipo de item, canal de ventas, prioridad...
-        for(Order order:Orders){
+        for (Order order : orders) {
 
-        String region=order.getRegion();
-        regionCount.put(region,regionCount.getOrDefault(region,0)+1);
+            String region = order.getRegion();
+            regionCount.put(region, regionCount.getOrDefault(region, 0) + 1);
 
-        String country=order.getCountry();
-        countryCount.put(country,countryCount.getOrDefault(country,0)+1);
+            String country = order.getCountry();
+            countryCount.put(country, countryCount.getOrDefault(country, 0) + 1);
 
-        String itemType=order.getItemType();
-        itemTypeCount.put(itemType,itemTypeCount.getOrDefault(itemType,0)+1);
+            String itemType = order.getItemType();
+            itemTypeCount.put(itemType, itemTypeCount.getOrDefault(itemType, 0) + 1);
 
-        String salesChannel=order.getSalesChannel();
-        salesChannelCount.put(salesChannel,salesChannelCount.getOrDefault(salesChannel,0)+1);
+            String salesChannel = order.getSalesChannel();
+            salesChannelCount.put(salesChannel, salesChannelCount.getOrDefault(salesChannel, 0) + 1);
 
-        String orderPriority=order.getOrderPriority();
-        orderPriorityCount.put(orderPriority,orderPriorityCount.getOrDefault(orderPriority,0)+1);
+            String orderPriority = order.getOrderPriority();
+            orderPriorityCount.put(orderPriority, orderPriorityCount.getOrDefault(orderPriority, 0) + 1);
 
         }
         System.out.println("------------------------------");
@@ -327,13 +325,13 @@ public static void showSummary(List<Order> Orders){
         showCounts(orderPriorityCount);
         System.out.println("------------------------------\n");
 
-        }
+    }
 
 
-public static void showCounts(Map<String, Integer> count){
-        for(Map.Entry<String, Integer> entry:count.entrySet()){
-        System.out.println(entry.getKey()+": "+entry.getValue());
+    public static void showCounts(Map<String, Integer> count) {
+        for (Map.Entry<String, Integer> entry : count.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
         }
-        }
-        }
+    }
+}
 

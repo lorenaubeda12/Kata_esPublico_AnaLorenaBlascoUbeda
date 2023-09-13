@@ -7,7 +7,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-public class sqlConnection {
+public class SQLConnection {
 
     static Properties properties = new Properties();
 
@@ -20,10 +20,10 @@ public class sqlConnection {
         return DriverManager.getConnection(properties.getProperty("URL"),properties.getProperty("user"),properties.getProperty("password"));
     }
 
-    public static void closeConnection(Connection conexion) {
-        if (conexion != null) {
+    public static void closeConnection(Connection connection) {
+        if (connection != null) {
             try {
-                conexion.close();
+                connection.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
