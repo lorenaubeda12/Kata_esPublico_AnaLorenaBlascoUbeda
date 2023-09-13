@@ -134,29 +134,27 @@ public class OrderManager {
             try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_QUERY)) {
                 int batchSize = 0;
                 int totalInsertData = 0;
+                System.out.println("Insertando datos en la base de datos. Por favor, espere.");
                 for (Order order : Orders) {
                     addOrderToBatch(preparedStatement, order);
-                    System.out.println("Añiadiendo datos al batch");
                     batchSize++;
+
 
                     if (batchSize % MAX_BATCH_SIZE == 0) {
                         // Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador
-                        System.out.println("Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador");
+
                         int[] batchResult = preparedStatement.executeBatch();
                         preparedStatement.clearBatch();
                         totalInsertData += batchSize;
-                        System.out.println("Total data insert: " + totalInsertData);
-                        System.out.println("batchSize de : " + batchSize);
                         batchSize = 0;
                     }
                 }
 
                 // Ejecutar el lote final (si no se ha alcanzado exactamente 1000 registros)
                 if (batchSize > 0) {
-                    System.out.println("Ejecutar el lote final (si no se ha alcanzado exactamente 1000 registros)");
                     int[] batchResult = preparedStatement.executeBatch();
                 }
-
+                System.out.println("Total de datos insertados: "+totalInsertData);
                 // Confirmar la transacción si todas las inserciones se realizaron con éxito
                 connection.commit();
 
