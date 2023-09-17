@@ -101,7 +101,7 @@ public class ManageOrders {
         newOrder.setSalesChannel(line[SALES_CHANNEL_COLUMN]);
         newOrder.setOrderPriority(line[PRIORITY_COLUMN]);
         newOrder.setOrderDate(line[DATE_COLUMN]);
-        newOrder.setOrderID(line[ORDER_ID_COLUMN]);
+        newOrder.setOrderID(Integer.parseInt(line[ORDER_ID_COLUMN]));
         newOrder.setShipDate(line[SHIP_DATE_COLUMN]);
         newOrder.setUnitsSold(Integer.parseInt(line[UNITS_SOLD_COLUMN]));
         newOrder.setUnitPrice(Double.parseDouble(line[UNIT_PRICE_COLUMN]));
@@ -132,6 +132,23 @@ public class ManageOrders {
             try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_QUERY)) {
                 for (Order order : Orders) {
                     addOrderToBatch(preparedStatement, order);
+<<<<<<< Updated upstream:procesarPedidos_LorenaBlasco/src/managerOrders/ManageOrders.java
+=======
+                    batchSize++;
+
+
+                    if (batchSize % MAX_BATCH_SIZE == 0) {
+                        // Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador
+
+                        int[] batchResult = preparedStatement.executeBatch();
+                        preparedStatement.clearBatch();
+                        totalInsertData += batchSize;
+                        batchSize = 0;
+                    }
+                    if (totalInsertData >MAX_BATCH_SIZE) {
+                        System.out.println(totalInsertData + " datos introducidos de un total de " + orders.size());
+                    }
+>>>>>>> Stashed changes:procesarPedidos_LorenaBlasco/src/main/java/Services/OrderManager.java
                 }
 
                 // Ejecutar todas las instrucciones de inserción en una sola transacción
@@ -158,7 +175,14 @@ public class ManageOrders {
     }
 
     private static void addOrderToBatch(PreparedStatement preparedStatement, Order order) throws SQLException {
+<<<<<<< Updated upstream:procesarPedidos_LorenaBlasco/src/managerOrders/ManageOrders.java
         preparedStatement.setString(1, order.getOrderID());
+=======
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        preparedStatement.setInt(1, order.getOrderID());
+>>>>>>> Stashed changes:procesarPedidos_LorenaBlasco/src/main/java/Services/OrderManager.java
         preparedStatement.setString(2, order.getOrderPriority());
 
         Date utilOrderDate = order.getOrderDate();
@@ -236,7 +260,7 @@ public class ManageOrders {
 
     private static String[] extractOrderData(Order order) {
         String[] data = {
-                order.getOrderID(),
+                String.valueOf(order.getOrderID()),
                 order.getOrderPriority(),
                 order.getOrderDate().toString(),
                 order.getRegion(),

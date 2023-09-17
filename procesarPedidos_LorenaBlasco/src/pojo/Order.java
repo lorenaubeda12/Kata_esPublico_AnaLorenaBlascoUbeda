@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Order {
-    private String orderID;
+    private int orderID;
     private String orderPriority;
     private Date orderDate;
     private String region;
@@ -24,11 +24,11 @@ public class Order {
     public Order() {
     }
 
-    public String getOrderID() {
+    public int getOrderID() {
         return orderID;
     }
 
-    public void setOrderID(String orderID) {
+    public void setOrderID(int orderID) {
         this.orderID = orderID;
     }
 
