@@ -33,6 +33,7 @@ public class ManageOrders {
     private static final int TOTAL_COST_COLUMN = 12;
     private static final int TOTAL_PROFIT_COLUMN = 13;
     private static final String SQL_INSERT_QUERY = "INSERT INTO orders (order_ID, order_Priority, order_Date, Region, Country, ItemType, SalesChannel, ShipDate, UnitsSold, UnitPrice, UnitCost, TotalRevenue, TotalCost, TotalProfit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final int MAX_BATCH_SIZE = 1000 ;
 
 
     public static void main(String[] args) {
@@ -126,17 +127,18 @@ public class ManageOrders {
         }
     }
 
-    public static void insertOrdersToDatabase(List<Order> Orders, Connection connection) {
+    public static void insertOrdersToDatabase(List<Order> orders, Connection connection) {
         try {
+            int batchSize=0;
             connection.setAutoCommit(false);
             try (PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_QUERY)) {
-                for (Order order : Orders) {
+                for (Order order : orders) {
                     addOrderToBatch(preparedStatement, order);
-<<<<<<< Updated upstream:procesarPedidos_LorenaBlasco/src/managerOrders/ManageOrders.java
-=======
+
                     batchSize++;
 
 
+                    int totalInsertData=0;
                     if (batchSize % MAX_BATCH_SIZE == 0) {
                         // Si se ha alcanzado el tamaño del lote (1000), ejecuta el lote y restablece el contador
 
@@ -148,7 +150,7 @@ public class ManageOrders {
                     if (totalInsertData >MAX_BATCH_SIZE) {
                         System.out.println(totalInsertData + " datos introducidos de un total de " + orders.size());
                     }
->>>>>>> Stashed changes:procesarPedidos_LorenaBlasco/src/main/java/Services/OrderManager.java
+
                 }
 
                 // Ejecutar todas las instrucciones de inserción en una sola transacción
@@ -175,14 +177,9 @@ public class ManageOrders {
     }
 
     private static void addOrderToBatch(PreparedStatement preparedStatement, Order order) throws SQLException {
-<<<<<<< Updated upstream:procesarPedidos_LorenaBlasco/src/managerOrders/ManageOrders.java
-        preparedStatement.setString(1, order.getOrderID());
-=======
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
         preparedStatement.setInt(1, order.getOrderID());
->>>>>>> Stashed changes:procesarPedidos_LorenaBlasco/src/main/java/Services/OrderManager.java
+
         preparedStatement.setString(2, order.getOrderPriority());
 
         Date utilOrderDate = order.getOrderDate();
